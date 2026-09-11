@@ -1,4 +1,49 @@
-// api + dto 를 묶어서 화면이 쓸 모델로 돌려줌.
-// 핵심: 일별 시세 페이지 캐시. 1년 탭이라고 25페이지 한 번에 받지 말 것.
-//       필요한 만큼만 받고 이미 받은 페이지는 재사용. (평가 비중 높음)
-// 관심 목록 시세도 종목별 호출 말고 한 번의 realtime 요청으로.
+import '../models/quote.dart';
+import '../models/stock.dart';
+import 'dto/autocomplete_dto.dart';
+import 'dto/realtime_dto.dart';
+import 'dto/stock_meta_dto.dart';
+import 'naver_api.dart';
+
+/// 화면이 사용하는 창구. NaverApi 와 DTO 를 조합해 모델을 돌려준다.
+/// 화면은 네이버 응답 구조를 전혀 모른다.
+class StockRepository {
+  StockRepository({NaverApi? api}) : _api = api ?? NaverApi();
+
+  final NaverApi _api;
+
+  /// 검색어로 국내 주식만 찾는다.
+  Future<List<Stock>> search(String query) async {
+    if (query.trim().isEmpty) return const [];
+
+    final json = await _api.autocomplete(query.trim());
+    return AutocompleteItemDto.listFromJson(
+      json,
+    ).where((e) => e.isDomesticStock).map((e) => e.toModel()).toList();
+  }
+
+  /// 여러 종목의 시세를 한 번의 요청으로 받아 symbol 로 찾을 수 있게 정리한다.
+  Future<Map<String, Quote>> quotes(List<String> symbols) async {
+    if (symbols.isEmpty) return const {};
+
+    final json = await _api.realtime(symbols);
+    return {
+      for (final dto in RealtimeItemDto.listFromJson(json))
+        dto.cd: dto.toModel(),
+    };
+  }
+
+  /// 단일 종목의 시세. 상세 화면용.
+  Future<Quote?> quote(String symbol) async {
+    final result = await quotes([symbol]);
+    return result[symbol];
+  }
+
+  /// 종목명, 거래소명.
+  Future<Stock> stock(String symbol) async {
+    final json = await _api.stockMeta(symbol);
+    return StockMetaDto.fromJson(json).toModel();
+  }
+
+  void dispose() => _api.close();
+}
