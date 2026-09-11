@@ -33,6 +33,33 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     widget.favorites.refresh();
   }
 
+  Widget _body(BuildContext context) {
+    final favorites = widget.favorites;
+
+    if (favorites.isEmpty) {
+      return EmptyState(
+        icon: Icons.star_border,
+        iconColor: context.colors.favoriteInactive,
+        title: '관심 종목이 없습니다',
+        description: '검색 탭에서 종목을 찾아\n별 아이콘을 눌러 추가해 주세요.',
+      );
+    }
+
+    // 한 번이라도 받아 둔 시세가 있으면 그걸 계속 보여준다. 갱신 한 번
+    // 실패했다고 화면을 통째로 에러로 덮을 이유는 없다.
+    if (favorites.hasError && favorites.hasNoQuotes) {
+      return EmptyState(
+        icon: Icons.cloud_off,
+        iconColor: context.colors.textDisabled,
+        title: '시세를 불러오지 못했습니다',
+        description: '네트워크 상태를 확인한 뒤\n다시 시도해 주세요.',
+        onRetry: favorites.refresh,
+      );
+    }
+
+    return _List(favorites: favorites, repo: widget.repo);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -43,16 +70,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
           children: [
             _Header(favorites: widget.favorites),
             const _Divider(),
-            Expanded(
-              child: widget.favorites.isEmpty
-                  ? EmptyState(
-                      icon: Icons.star_border,
-                      iconColor: context.colors.favoriteInactive,
-                      title: '관심 종목이 없습니다',
-                      description: '검색 탭에서 종목을 찾아\n별 아이콘을 눌러 추가해 주세요.',
-                    )
-                  : _List(favorites: widget.favorites, repo: widget.repo),
-            ),
+            Expanded(child: _body(context)),
           ],
         ),
       ),

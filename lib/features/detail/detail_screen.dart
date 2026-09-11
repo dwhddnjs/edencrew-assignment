@@ -9,6 +9,7 @@ import '../../models/quote.dart';
 import '../../models/stock.dart';
 import '../../state/favorites.dart';
 import '../../theme/theme.dart';
+import '../common/empty_state.dart';
 import 'candle_chart.dart';
 import 'daily_price_table.dart';
 import 'summary_card.dart';
@@ -49,11 +50,38 @@ class _DetailScreenState extends State<DetailScreen> {
   Quote? _quote;
   List<DailyPrice> _prices = const [];
 
+  /// 헤더에 쓸 종목 정보. 검색 결과로 받은 값으로 먼저 그리고,
+  /// 메타데이터 응답이 오면 거래소명이 정확한 값으로 바뀐다.
+  late Stock _stock = widget.stock;
+
+  bool _loading = true;
+  bool _error = false;
+
   @override
   void initState() {
     super.initState();
-    _loadQuote();
-    _loadPrices(_period);
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = false;
+    });
+    try {
+      await Future.wait([_loadMeta(), _loadQuote(), _loadPrices(_period)]);
+    } catch (_) {
+      if (mounted) setState(() => _error = true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// 종목명·거래소명. 검색 자동완성의 값과 대개 같지만, 관심 목록에서 바로
+  /// 들어온 경우까지 포함해 상세에서는 이 응답을 정본으로 쓴다.
+  Future<void> _loadMeta() async {
+    final stock = await widget.repo.stock(widget.stock.symbol);
+    if (mounted) setState(() => _stock = stock);
   }
 
   Future<void> _loadQuote() async {
@@ -68,10 +96,14 @@ class _DetailScreenState extends State<DetailScreen> {
     if (mounted && period == _period) setState(() => _prices = prices);
   }
 
-  void _changePeriod(ChartPeriod period) {
+  Future<void> _changePeriod(ChartPeriod period) async {
     if (period == _period) return;
     setState(() => _period = period);
-    _loadPrices(period);
+    try {
+      await _loadPrices(period);
+    } catch (_) {
+      if (mounted) setState(() => _error = true);
+    }
   }
 
   @override
@@ -83,36 +115,56 @@ class _DetailScreenState extends State<DetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _Header(stock: widget.stock, favorites: widget.favorites),
+            _Header(stock: _stock, favorites: widget.favorites),
             Divider(
               height: dimens.borderHairline,
               thickness: dimens.borderHairline,
               color: context.colors.borderSubtle,
             ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(
-                  dimens.space4,
-                  dimens.space4,
-                  dimens.space4,
-                  dimens.space6,
-                ),
-                children: [
-                  if (quote != null) _PriceHeadline(quote: quote),
-                  SizedBox(height: dimens.space4),
-                  _PeriodTabs(current: _period, onChanged: _changePeriod),
-                  SizedBox(height: dimens.space4),
-                  CandleChart(prices: _prices),
-                  SizedBox(height: dimens.space5),
-                  if (quote != null) SummaryCards(quote: quote),
-                  SizedBox(height: dimens.space6),
-                  DailyPriceTable(prices: _prices),
-                ],
-              ),
-            ),
+            Expanded(child: _body(context, quote)),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _body(BuildContext context, Quote? quote) {
+    final dimens = context.dimens;
+
+    // 받아 둔 게 하나도 없을 때만 화면을 통째로 덮는다. 기간을 바꾸다 실패한
+    // 경우라면 이미 그려진 차트와 표를 지울 이유가 없다.
+    if (_error && quote == null && _prices.isEmpty) {
+      return EmptyState(
+        icon: Icons.cloud_off,
+        iconColor: context.colors.textDisabled,
+        title: '종목 정보를 불러오지 못했습니다',
+        description: '네트워크 상태를 확인한 뒤\n다시 시도해 주세요.',
+        onRetry: _load,
+      );
+    }
+
+    if (_loading && quote == null && _prices.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        dimens.space4,
+        dimens.space4,
+        dimens.space4,
+        dimens.space6,
+      ),
+      children: [
+        if (quote != null) _PriceHeadline(quote: quote),
+        SizedBox(height: dimens.space4),
+        _PeriodTabs(current: _period, onChanged: _changePeriod),
+        SizedBox(height: dimens.space4),
+        CandleChart(prices: _prices),
+        SizedBox(height: dimens.space5),
+        if (quote != null) SummaryCards(quote: quote),
+        SizedBox(height: dimens.space6),
+        DailyPriceTable(prices: _prices),
+      ],
     );
   }
 }

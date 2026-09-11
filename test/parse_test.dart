@@ -76,4 +76,74 @@ void main() {
     expect(q.changeRate, 0);
     expect(q.direction, PriceDirection.up);
   });
+
+  test('자동완성: 지수 · 시장지표 항목의 null 필드에도 터지지 않는다', () {
+    // 실제 응답. target 에 index, marketindicator 가 들어 있어서
+    // nationCode 가 null 인 항목이 같이 온다.
+    final json = {
+      'query': '코스피',
+      'items': [
+        {
+          'code': 'KOSPI',
+          'name': '코스피',
+          'typeName': null,
+          'nationCode': null,
+          'category': 'index',
+        },
+        {
+          'code': '005930',
+          'name': '삼성전자',
+          'typeName': '코스피',
+          'nationCode': 'KOR',
+          'category': 'stock',
+        },
+      ],
+    };
+
+    final stocks = AutocompleteItemDto.listFromJson(
+      json,
+    ).where((e) => e.isDomesticStock).map((e) => e.toModel()).toList();
+
+    expect(stocks.map((s) => s.symbol), ['005930']);
+  });
+
+  test('실시간 시세: 숫자 필드가 비어도 그 종목만 0 이 되고 나머지는 살아남는다', () {
+    final json = {
+      'result': {
+        'areas': [
+          {
+            'datas': [
+              {
+                'cd': '005930',
+                'nv': null,
+                'pcv': 10,
+                'ov': 1,
+                'hv': 1,
+                'lv': 1,
+                'aq': 1,
+                'countOfListedStock': 1,
+              },
+              {
+                'cd': '000660',
+                'nv': 200,
+                'pcv': 100,
+                'ov': 1,
+                'hv': 1,
+                'lv': 1,
+                'aq': 1,
+                'countOfListedStock': 1,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    final quotes = {
+      for (final d in RealtimeItemDto.listFromJson(json)) d.cd: d.toModel(),
+    };
+
+    expect(quotes['005930']!.price, 0);
+    expect(quotes['000660']!.price, 200);
+  });
 }

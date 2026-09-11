@@ -33,10 +33,17 @@ class Favorites extends ChangeNotifier {
   /// 시안의 기본값이 `가나다순` 이다.
   SortBy _sortBy = SortBy.name;
   bool _loading = false;
+  bool _error = false;
 
   SortBy get sortBy => _sortBy;
   bool get isLoading => _loading;
   bool get isEmpty => _stocks.isEmpty;
+
+  /// 마지막 갱신이 실패했는지. 이전에 받아 둔 시세가 있으면 그건 그대로 쓴다.
+  bool get hasError => _error;
+
+  /// 시세를 한 건도 못 받은 상태. 이럴 때만 목록 대신 에러 화면을 띄운다.
+  bool get hasNoQuotes => _quotes.isEmpty;
 
   /// 아직 시세를 받지 못했으면 null. 화면에서 스켈레톤으로 그린다.
   Quote? quoteOf(String symbol) => _quotes[symbol];
@@ -90,12 +97,18 @@ class Favorites extends ChangeNotifier {
   }
 
   /// 관심 종목 전체 시세를 한 번의 요청으로 다시 받는다.
+  ///
+  /// 실패는 삼키지 않고 `hasError` 로 남긴다. 화면이 스켈레톤을 영원히
+  /// 띄운 채 멈춰 있으면 사용자는 로딩 중인지 실패인지 알 수 없다.
   Future<void> refresh() async {
     if (_stocks.isEmpty || _loading) return;
     _loading = true;
+    _error = false;
     notifyListeners();
     try {
       _quotes.addAll(await _repo.quotes([for (final s in _stocks) s.symbol]));
+    } catch (_) {
+      _error = true;
     } finally {
       _loading = false;
       notifyListeners();

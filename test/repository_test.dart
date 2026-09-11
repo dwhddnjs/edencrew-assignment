@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 
 import 'package:edencrew_assignment_starter/data/naver_api.dart';
 import 'package:edencrew_assignment_starter/data/stock_repository.dart';
+import 'package:edencrew_assignment_starter/models/daily_price.dart';
 
 /// 요청 URI 를 기록하면서 mock 파일을 응답으로 돌려주는 가짜 클라이언트.
 ({StockRepository repo, List<Uri> calls}) build(String mockFile) {
@@ -56,5 +57,27 @@ void main() {
     expect(stocks, isNotEmpty);
     expect(stocks.every((s) => s.symbol.length == 6), isTrue);
     expect(stocks.first.id, startsWith('domestic:'));
+  });
+
+  test('같은 종목의 일별 시세 요청이 겹쳐도 같은 페이지를 두 번 받지 않는다', () async {
+    final calls = <Uri>[];
+    final html = File('assets/mock/sise_day.html').readAsBytesSync();
+    final client = MockClient((req) async {
+      calls.add(req.url);
+      return http.Response.bytes(html, 200);
+    });
+    final repo = StockRepository(api: NaverApi(client: client));
+
+    // 1개월 로딩이 끝나기 전에 1년 탭을 누르는 상황.
+    await Future.wait([
+      repo.dailyPrices('005930', ChartPeriod.month1),
+      repo.dailyPrices('005930', ChartPeriod.year1),
+    ]);
+
+    final pages = [
+      for (final u in calls) int.parse(u.queryParameters['page']!),
+    ];
+    expect(pages, pages.toSet().toList());
+    expect(pages, [for (var i = 1; i <= 25; i++) i]);
   });
 }

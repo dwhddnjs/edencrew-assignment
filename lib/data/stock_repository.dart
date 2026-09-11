@@ -55,12 +55,22 @@ class StockRepository {
   /// - 이미 받아 둔 페이지는 재사용하고 모자란 페이지만 추가로 요청한다.
   ///   (`1개월` -> `1년` 으로 옮기면 3~25 페이지만 받는다)
   /// - `lastPage` 를 넘는 페이지는 요청하지 않는다.
-  Future<List<DailyPrice>> dailyPrices(
+  /// - 같은 종목의 요청이 겹치면(1개월 로딩 중에 `1년` 탭을 누르는 흔한 조작)
+  ///   뒤 요청을 앞 요청 뒤에 줄 세운다. 그러지 않으면 두 루프가 같은
+  ///   `fetchedPages` 를 읽어 같은 페이지를 중복 요청한다.
+  Future<List<DailyPrice>> dailyPrices(String symbol, ChartPeriod period) {
+    final cache = _daily.putIfAbsent(symbol, _DailyPriceCache.new);
+    final result = cache.queue.then((_) => _fetchPages(cache, symbol, period));
+    // 앞 요청이 실패해도 줄은 이어져야 한다. 에러는 호출한 쪽이 받는다.
+    cache.queue = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
+  Future<List<DailyPrice>> _fetchPages(
+    _DailyPriceCache cache,
     String symbol,
     ChartPeriod period,
   ) async {
-    final cache = _daily.putIfAbsent(symbol, _DailyPriceCache.new);
-
     while (cache.fetchedPages < period.pages) {
       final next = cache.fetchedPages + 1;
       if (next > cache.lastPage) break;
@@ -90,4 +100,7 @@ class _DailyPriceCache {
 
   /// 첫 응답을 받기 전에는 알 수 없으므로 일단 열어 둔다.
   int lastPage = 1 << 30;
+
+  /// 이 종목의 진행 중인 요청. 겹친 요청을 직렬화하는 데 쓴다.
+  Future<void> queue = Future.value();
 }

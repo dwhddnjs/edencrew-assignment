@@ -14,9 +14,13 @@ import 'package:http/testing.dart';
 Future<Favorites> pumpSearch(
   WidgetTester tester, {
   String mockFile = 'autocomplete.json',
+  bool fail = false,
 }) async {
   final bytes = File('assets/mock/$mockFile').readAsBytesSync();
-  final client = MockClient((_) async => http.Response.bytes(bytes, 200));
+  final client = MockClient(
+    (_) async =>
+        fail ? http.Response('', 500) : http.Response.bytes(bytes, 200),
+  );
   final repo = StockRepository(api: NaverApi(client: client));
   final favorites = Favorites(repo: repo);
 
@@ -141,5 +145,13 @@ void main() {
 
     expect(find.text('종목을 검색해 보세요'), findsOneWidget);
     expect(find.text('005930 · 코스피'), findsNothing);
+  });
+
+  testWidgets('검색이 실패하면 백지 대신 에러 상태와 다시 시도 버튼이 뜬다', (tester) async {
+    await pumpSearch(tester, fail: true);
+    await type(tester, '삼성');
+
+    expect(find.text('검색에 실패했습니다'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
   });
 }

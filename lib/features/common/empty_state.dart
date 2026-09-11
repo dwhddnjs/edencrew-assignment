@@ -12,6 +12,7 @@ class EmptyState extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.description,
+    this.onRetry,
   });
 
   final IconData icon;
@@ -20,6 +21,9 @@ class EmptyState extends StatelessWidget {
 
   /// 줄바꿈은 호출하는 쪽에서 `\n` 으로 넣는다. (시안의 두 줄 문구)
   final String description;
+
+  /// 네트워크 실패로 이 상태를 보여줄 때만 준다. 시안의 빈 상태에는 없다.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +57,16 @@ class EmptyState extends StatelessWidget {
                 height: 1.5,
               ),
             ),
+            if (onRetry != null) ...[
+              SizedBox(height: dimens.space4),
+              TextButton(
+                onPressed: onRetry,
+                style: TextButton.styleFrom(
+                  foregroundColor: colors.accentDefault,
+                ),
+                child: const Text('다시 시도'),
+              ),
+            ],
           ],
         ),
       ),

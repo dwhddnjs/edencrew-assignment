@@ -16,23 +16,30 @@ import 'package:http/testing.dart';
 
 const samsung = Stock(symbol: '005930', name: '삼성전자', market: '코스피');
 
-/// 실시간 시세는 realtime.json, 일별 시세는 sise_day.html 을 돌려준다.
-({Favorites favorites, List<Uri> calls, StockRepository repo}) backend() {
+/// 종목 메타데이터 / 실시간 시세 / 일별 시세를 각각 mock 파일로 돌려준다.
+/// [fail] 이 true 면 전부 500 을 돌려준다. (에러 상태 확인용)
+({Favorites favorites, List<Uri> calls, StockRepository repo}) backend({
+  bool fail = false,
+}) {
+  final meta = File('assets/mock/meta.json').readAsBytesSync();
   final realtime = File('assets/mock/realtime.json').readAsBytesSync();
   final html = File('assets/mock/sise_day.html').readAsBytesSync();
   final calls = <Uri>[];
 
   final client = MockClient((req) async {
     calls.add(req.url);
-    final isDaily = req.url.path.contains('sise_day');
-    return http.Response.bytes(isDaily ? html : realtime, 200);
+    if (fail) return http.Response('', 500);
+    final path = req.url.path;
+    if (path.contains('sise_day')) return http.Response.bytes(html, 200);
+    if (path.contains('fchart')) return http.Response.bytes(meta, 200);
+    return http.Response.bytes(realtime, 200);
   });
   final repo = StockRepository(api: NaverApi(client: client));
   return (favorites: Favorites(repo: repo), calls: calls, repo: repo);
 }
 
-Future<List<Uri>> pumpDetail(WidgetTester tester) async {
-  final b = backend();
+Future<List<Uri>> pumpDetail(WidgetTester tester, {bool fail = false}) async {
+  final b = backend(fail: fail);
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.dark,
@@ -161,5 +168,19 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('네트워크가 실패하면 에러 상태와 다시 시도 버튼을 보여준다', (tester) async {
+    await pumpDetail(tester, fail: true);
+
+    expect(find.text('종목 정보를 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  testWidgets('종목 메타데이터 endpoint 로 헤더의 거래소명을 받는다', (tester) async {
+    final calls = await pumpDetail(tester);
+
+    expect(calls.where((u) => u.path.contains('fchart')), hasLength(1));
+    expect(find.text('005930 · 코스피'), findsOneWidget);
   });
 }

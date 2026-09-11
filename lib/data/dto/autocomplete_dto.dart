@@ -20,12 +20,17 @@ class AutocompleteItemDto {
   });
 
   factory AutocompleteItemDto.fromJson(Map<String, dynamic> json) {
+    // 요청이 stock,ipo,index,marketindicator 라서 지수("코스피")와
+    // 시장지표("달러") 항목이 섞여 온다. 이 항목들은 nationCode 가 null 이다.
+    // 걸러내는 건 isDomesticStock 이지만 파싱이 먼저라 여기서 버티지 못하면
+    // 검색 전체가 실패한다. 빈 문자열이면 어차피 필터에서 떨어진다.
+    String s(String key) => json[key] as String? ?? '';
     return AutocompleteItemDto(
-      code: json['code'] as String,
-      name: json['name'] as String,
-      typeName: json['typeName'] as String,
-      nationCode: json['nationCode'] as String,
-      category: json['category'] as String,
+      code: s('code'),
+      name: s('name'),
+      typeName: s('typeName'),
+      nationCode: s('nationCode'),
+      category: s('category'),
     );
   }
 

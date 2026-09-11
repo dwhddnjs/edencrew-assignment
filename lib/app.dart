@@ -66,7 +66,13 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: _TabBar(
         current: _tab,
-        onChanged: (i) => setState(() => _tab = i),
+        onChanged: (i) {
+          setState(() => _tab = i);
+          // IndexedStack 은 화면을 계속 살려 두므로 관심 화면의 initState 가
+          // 앱 시작 때 한 번만 돈다. 검색 탭에서 새로 담은 종목의 시세는
+          // 탭을 옮겨 올 때 받아야 한다.
+          if (i == 0) widget.favorites.refresh();
+        },
       ),
     );
   }

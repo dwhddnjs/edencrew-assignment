@@ -36,6 +36,9 @@ class _SearchScreenState extends State<SearchScreen> {
   /// 한 번이라도 검색을 마쳤는지. 아직이면 '결과 없음' 대신 초기 상태를 둔다.
   bool _searched = false;
 
+  /// 마지막 요청이 실패했는지.
+  bool _error = false;
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -50,6 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _results = const [];
         _searched = false;
+        _error = false;
       });
       return;
     }
@@ -57,12 +61,23 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _search(String value) async {
-    final found = await widget.repo.search(value);
-    if (!mounted || value != _controller.text) return; // 늦게 온 응답은 버린다
-    setState(() {
-      _results = found;
-      _searched = true;
-    });
+    try {
+      final found = await widget.repo.search(value);
+      if (!mounted || value != _controller.text) return; // 늦게 온 응답은 버린다
+      setState(() {
+        _results = found;
+        _searched = true;
+        _error = false;
+      });
+    } catch (_) {
+      if (!mounted || value != _controller.text) return;
+      // 잡지 않으면 결과 0개짜리 목록, 즉 백지가 그려진다.
+      setState(() {
+        _results = const [];
+        _searched = true;
+        _error = true;
+      });
+    }
   }
 
   void _clear() {
@@ -99,6 +114,16 @@ class _SearchScreenState extends State<SearchScreen> {
         iconColor: context.colors.textDisabled,
         title: '종목을 검색해 보세요',
         description: '종목명 또는 종목코드 6자리로\n검색하실 수 있습니다.',
+      );
+    }
+
+    if (_error) {
+      return EmptyState(
+        icon: Icons.cloud_off,
+        iconColor: context.colors.textDisabled,
+        title: '검색에 실패했습니다',
+        description: '네트워크 상태를 확인한 뒤\n다시 시도해 주세요.',
+        onRetry: () => _search(_controller.text),
       );
     }
 

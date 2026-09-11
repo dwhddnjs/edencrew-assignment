@@ -26,7 +26,9 @@ class RealtimeItemDto {
   });
 
   factory RealtimeItemDto.fromJson(Map<String, dynamic> json) {
-    int n(String key) => (json[key] as num).toInt();
+    // 한 종목이라도 필드가 비면 관심 목록 전체 갱신이 실패한다.
+    // 부분 실패를 전체 실패로 키우지 않는다.
+    int n(String key) => (json[key] as num?)?.toInt() ?? 0;
     return RealtimeItemDto(
       cd: json['cd'] as String,
       nv: n('nv'),
