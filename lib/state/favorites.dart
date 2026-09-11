@@ -29,7 +29,9 @@ class Favorites extends ChangeNotifier {
 
   final List<Stock> _stocks = [];
   final Map<String, Quote> _quotes = {};
-  SortBy _sortBy = SortBy.price;
+
+  /// 시안의 기본값이 `가나다순` 이다.
+  SortBy _sortBy = SortBy.name;
   bool _loading = false;
 
   SortBy get sortBy => _sortBy;
