@@ -43,6 +43,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # 시뮬레이터에서 실제 앱을 구동해 확인하는 통합 테스트.
+  # `flutter test` 는 test/ 만 보므로 이 테스트는 기기를 지정해 따로 돌린다.
+  #   flutter test integration_test/app_test.dart -d <device>
+  integration_test:
+    sdk: flutter
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
