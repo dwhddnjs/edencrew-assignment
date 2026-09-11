@@ -60,7 +60,7 @@ class _HomeShellState extends State<HomeShell> {
       body: IndexedStack(
         index: _tab,
         children: [
-          WatchlistScreen(favorites: widget.favorites),
+          WatchlistScreen(favorites: widget.favorites, repo: widget.repo),
           SearchScreen(repo: widget.repo, favorites: widget.favorites),
         ],
       ),

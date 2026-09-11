@@ -1,3 +1,102 @@
-// 캔들 차트. CustomPainter 직접 또는 패키지.
-// 상승 chartLineUp / 하락 chartLineDown 색은 맞춰야 함.
-// 캔들 두께·여백·축 눈금 같은 렌더링 디테일은 시안과 달라도 감점 없음.
+// 캔들 차트. 패키지 없이 CustomPainter 로 그린다.
+// 상승 캔들 chartLineUp, 하락 캔들 chartLineDown.
+
+import 'package:flutter/material.dart';
+
+import '../../models/daily_price.dart';
+import '../../theme/theme.dart';
+
+class CandleChart extends StatelessWidget {
+  const CandleChart({super.key, required this.prices});
+
+  /// 최신이 앞인 순서(저장소가 주는 그대로). 그릴 때 뒤집어서 왼쪽이 과거다.
+  final List<DailyPrice> prices;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return SizedBox(
+      height: 200,
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: _CandlePainter(
+          prices: prices.reversed.toList(),
+          up: colors.chartLineUp,
+          down: colors.chartLineDown,
+          flat: colors.chartLineFlat,
+        ),
+      ),
+    );
+  }
+}
+
+class _CandlePainter extends CustomPainter {
+  _CandlePainter({
+    required this.prices,
+    required this.up,
+    required this.down,
+    required this.flat,
+  });
+
+  /// 오래된 날짜가 앞.
+  final List<DailyPrice> prices;
+  final Color up;
+  final Color down;
+  final Color flat;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (prices.isEmpty) return;
+
+    // 기간 전체의 고가/저가로 y 범위를 잡는다.
+    var lowest = prices.first.low;
+    var highest = prices.first.high;
+    for (final p in prices) {
+      if (p.low < lowest) lowest = p.low;
+      if (p.high > highest) highest = p.high;
+    }
+    // 전 구간이 같은 값이면 0으로 나누게 되므로 최소 폭을 준다.
+    final span = (highest - lowest).clamp(1, 1 << 62);
+
+    double y(int price) => size.height * (1 - (price - lowest) / span);
+
+    final slot = size.width / prices.length;
+    // 캔들 사이가 붙어 보이지 않도록 슬롯의 60%만 몸통으로 쓴다.
+    final bodyWidth = (slot * 0.6).clamp(1.0, 12.0);
+
+    for (var i = 0; i < prices.length; i++) {
+      final p = prices[i];
+      final center = slot * (i + 0.5);
+      final paint = Paint()
+        ..color = p.close > p.open
+            ? up
+            : p.close < p.open
+            ? down
+            : flat;
+
+      // 심지: 고가 ~ 저가.
+      canvas.drawRect(
+        Rect.fromLTRB(center - 0.5, y(p.high), center + 0.5, y(p.low)),
+        paint,
+      );
+
+      // 몸통: 시가 ~ 종가. 보합이면 선으로만 남아 사라지므로 최소 높이를 준다.
+      final top = y(p.close > p.open ? p.close : p.open);
+      final bottom = y(p.close > p.open ? p.open : p.close);
+      canvas.drawRect(
+        Rect.fromLTRB(
+          center - bodyWidth / 2,
+          top,
+          center + bodyWidth / 2,
+          bottom - top < 1 ? top + 1 : bottom,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CandlePainter old) =>
+      old.prices != prices || old.up != up || old.down != down;
+}

@@ -9,6 +9,7 @@ import '../../models/stock.dart';
 import '../../state/favorites.dart';
 import '../../theme/theme.dart';
 import '../common/empty_state.dart';
+import '../detail/detail_screen.dart';
 import 'favorite_toast.dart';
 import 'search_result_tile.dart';
 
@@ -125,6 +126,12 @@ class _SearchScreenState extends State<SearchScreen> {
           query: _query.trim(),
           isFavorite: widget.favorites.contains(_results[i].symbol),
           onToggleFavorite: () => _toggle(_results[i]),
+          onTap: () => openDetail(
+            context,
+            stock: _results[i],
+            repo: widget.repo,
+            favorites: widget.favorites,
+          ),
         ),
       ),
     );

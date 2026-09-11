@@ -3,16 +3,23 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/stock_repository.dart';
 import '../../state/favorites.dart';
 import '../../theme/theme.dart';
 import '../common/empty_state.dart';
+import '../detail/detail_screen.dart';
 import 'sort_sheet.dart';
 import 'watchlist_tile.dart';
 
 class WatchlistScreen extends StatefulWidget {
-  const WatchlistScreen({super.key, required this.favorites});
+  const WatchlistScreen({
+    super.key,
+    required this.favorites,
+    required this.repo,
+  });
 
   final Favorites favorites;
+  final StockRepository repo;
 
   @override
   State<WatchlistScreen> createState() => _WatchlistScreenState();
@@ -44,7 +51,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                       title: '관심 종목이 없습니다',
                       description: '검색 탭에서 종목을 찾아\n별 아이콘을 눌러 추가해 주세요.',
                     )
-                  : _List(favorites: widget.favorites),
+                  : _List(favorites: widget.favorites, repo: widget.repo),
             ),
           ],
         ),
@@ -54,9 +61,10 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
 }
 
 class _List extends StatelessWidget {
-  const _List({required this.favorites});
+  const _List({required this.favorites, required this.repo});
 
   final Favorites favorites;
+  final StockRepository repo;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +79,12 @@ class _List extends StatelessWidget {
         itemBuilder: (context, i) => WatchlistTile(
           stock: items[i],
           quote: favorites.quoteOf(items[i].symbol),
+          onTap: () => openDetail(
+            context,
+            stock: items[i],
+            repo: repo,
+            favorites: favorites,
+          ),
         ),
       ),
     );
