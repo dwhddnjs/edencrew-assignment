@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import 'data/stock_repository.dart';
+import 'features/search/search_screen.dart';
 import 'features/watchlist/watchlist_screen.dart';
 import 'state/favorites.dart';
 import 'theme/theme.dart';
@@ -60,7 +61,7 @@ class _HomeShellState extends State<HomeShell> {
         index: _tab,
         children: [
           WatchlistScreen(favorites: widget.favorites),
-          const SizedBox.shrink(), // 검색 화면
+          SearchScreen(repo: widget.repo, favorites: widget.favorites),
         ],
       ),
       bottomNavigationBar: _TabBar(
@@ -99,12 +100,14 @@ class _TabBar extends StatelessWidget {
             children: [
               _TabItem(
                 icon: Icons.star,
+                inactiveIcon: Icons.star_border,
                 label: '관심',
                 selected: current == 0,
                 onTap: () => onChanged(0),
               ),
               _TabItem(
                 icon: Icons.search,
+                inactiveIcon: Icons.search,
                 label: '검색',
                 selected: current == 1,
                 onTap: () => onChanged(1),
@@ -120,12 +123,17 @@ class _TabBar extends StatelessWidget {
 class _TabItem extends StatelessWidget {
   const _TabItem({
     required this.icon,
+    required this.inactiveIcon,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
   final IconData icon;
+
+  /// 시안에서 비활성 관심 탭은 속이 빈 별이다.
+  final IconData inactiveIcon;
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -142,7 +150,11 @@ class _TabItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: dimens.iconMd + dimens.space1, color: color),
+            Icon(
+              selected ? icon : inactiveIcon,
+              size: dimens.iconMd + dimens.space1,
+              color: color,
+            ),
             SizedBox(height: dimens.space1),
             Text(
               label,
