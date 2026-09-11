@@ -15,7 +15,9 @@ Favorites build({List<Uri>? calls}) {
     calls?.add(req.url);
     return http.Response.bytes(bytes, 200);
   });
-  return Favorites(repo: StockRepository(api: NaverApi(client: client)));
+  return Favorites(
+    repo: StockRepository(api: NaverApi(client: client)),
+  );
 }
 
 const samsung = Stock(symbol: '005930', name: '삼성전자', market: '코스피');
@@ -40,10 +42,7 @@ void main() {
     await f.refresh();
 
     expect(calls.length, 1);
-    expect(
-      calls.single.queryParameters['query'],
-      'SERVICE_ITEM:005930,000660',
-    );
+    expect(calls.single.queryParameters['query'], 'SERVICE_ITEM:005930,000660');
   });
 
   test('시세를 받기 전에는 quoteOf 가 null (스켈레톤)', () async {

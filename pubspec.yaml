@@ -37,6 +37,7 @@ dependencies:
 
   # Naver endpoint 호출. dart:io HttpClient로도 되지만 코드가 길어짐
   http: ^1.2.2
+  html: ^0.15.7
 
 dev_dependencies:
   flutter_test:
