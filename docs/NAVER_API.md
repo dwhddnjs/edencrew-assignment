@@ -138,4 +138,4 @@ GET https://finance.naver.com/item/sise_day.naver
 - 그러면 네트워크 상태와 무관하게 파싱과 UI 작업을 진행할 수 있습니다.
 - 저장한 mock 파일도 함께 커밋해 주시면 리뷰할 때 도움이 됩니다.
 
-브라우저(Chrome)에서는 CORS 때문에 요청이 막힙니다. 실행 대상 관련 안내는 [루트 README](../README.md#실행하기)를 참고하세요.
+브라우저(Chrome)에서는 CORS 때문에 요청이 막힙니다. 실행 대상 관련 안내는 [루트 README](../README.md#실행-방법)를 참고하세요.
