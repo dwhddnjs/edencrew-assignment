@@ -1,5 +1,5 @@
 // 캔들 차트. 패키지 없이 CustomPainter 로 그린다.
-// 상승 캔들 chartLineUp, 하락 캔들 chartLineDown.
+// 상승 몸통 chartLineUp, 하락 몸통 chartLineDown, 심지와 보합 몸통 chartBaseline.
 
 import 'package:flutter/material.dart';
 
@@ -12,19 +12,27 @@ class CandleChart extends StatelessWidget {
   /// 최신이 앞인 순서(저장소가 주는 그대로). 그릴 때 뒤집어서 왼쪽이 과거다.
   final List<DailyPrice> prices;
 
+  /// 시안의 차트 영역 높이.
+  static const height = 200.0;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final dimens = context.dimens;
 
     return SizedBox(
-      height: 200,
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: _CandlePainter(
-          prices: prices.reversed.toList(),
-          up: colors.chartLineUp,
-          down: colors.chartLineDown,
-          flat: colors.chartLineFlat,
+      height: height,
+      // 고가/저가가 영역 끝에 붙지 않도록 시안만큼 위아래를 비워 둔다.
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: dimens.space6),
+        child: CustomPaint(
+          size: Size.infinite,
+          painter: _CandlePainter(
+            prices: prices.reversed.toList(),
+            up: colors.chartLineUp,
+            down: colors.chartLineDown,
+            flat: colors.chartBaseline,
+          ),
         ),
       ),
     );
@@ -43,6 +51,8 @@ class _CandlePainter extends CustomPainter {
   final List<DailyPrice> prices;
   final Color up;
   final Color down;
+
+  /// 심지와 보합 몸통에 함께 쓴다.
   final Color flat;
 
   @override
@@ -64,21 +74,16 @@ class _CandlePainter extends CustomPainter {
     final slot = size.width / prices.length;
     // 캔들 사이가 붙어 보이지 않도록 슬롯의 60%만 몸통으로 쓴다.
     final bodyWidth = (slot * 0.6).clamp(1.0, 12.0);
+    final wick = Paint()..color = flat;
 
     for (var i = 0; i < prices.length; i++) {
       final p = prices[i];
       final center = slot * (i + 0.5);
-      final paint = Paint()
-        ..color = p.close > p.open
-            ? up
-            : p.close < p.open
-            ? down
-            : flat;
 
       // 심지: 고가 ~ 저가.
       canvas.drawRect(
         Rect.fromLTRB(center - 0.5, y(p.high), center + 0.5, y(p.low)),
-        paint,
+        wick,
       );
 
       // 몸통: 시가 ~ 종가. 보합이면 선으로만 남아 사라지므로 최소 높이를 준다.
@@ -91,12 +96,20 @@ class _CandlePainter extends CustomPainter {
           center + bodyWidth / 2,
           bottom - top < 1 ? top + 1 : bottom,
         ),
-        paint,
+        Paint()
+          ..color = p.close > p.open
+              ? up
+              : p.close < p.open
+              ? down
+              : flat,
       );
     }
   }
 
   @override
   bool shouldRepaint(_CandlePainter old) =>
-      old.prices != prices || old.up != up || old.down != down;
+      old.prices != prices ||
+      old.up != up ||
+      old.down != down ||
+      old.flat != flat;
 }

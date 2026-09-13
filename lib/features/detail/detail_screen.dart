@@ -150,19 +150,19 @@ class _DetailScreenState extends State<DetailScreen> {
     return ListView(
       padding: EdgeInsets.fromLTRB(
         dimens.space4,
-        dimens.space4,
+        dimens.space3,
         dimens.space4,
         dimens.space6,
       ),
       children: [
         if (quote != null) _PriceHeadline(quote: quote),
-        SizedBox(height: dimens.space4),
+        SizedBox(height: dimens.space3),
         _PeriodTabs(current: _period, onChanged: _changePeriod),
         SizedBox(height: dimens.space4),
         CandleChart(prices: _prices),
-        SizedBox(height: dimens.space5),
+        SizedBox(height: dimens.space4),
         if (quote != null) SummaryCards(quote: quote),
-        SizedBox(height: dimens.space6),
+        SizedBox(height: dimens.space5),
         DailyPriceTable(prices: _prices),
       ],
     );
@@ -180,59 +180,64 @@ class _Header extends StatelessWidget {
     final colors = context.colors;
     final dimens = context.dimens;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: dimens.space2,
-        vertical: dimens.space2,
-      ),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back),
-            iconSize: dimens.iconMd + dimens.space1,
+          // 좌우 여백을 버튼 안에 넣어 터치 영역을 48 로 넓힌다.
+          // (아이콘 자체는 시안대로 화면 가장자리에서 16 떨어진다)
+          _IconButton(
+            icon: Icons.arrow_back,
             color: colors.textPrimary,
             tooltip: '뒤로',
+            padding: EdgeInsets.only(left: dimens.space4, right: dimens.space3),
+            onTap: () => Navigator.of(context).pop(),
           ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  stock.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 17,
-                    fontWeight: AppTypography.bold,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: dimens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    stock.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: AppTypography.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: dimens.space1),
-                Text(
-                  '${stock.symbol} · ${stock.market}',
-                  style: TextStyle(
-                    color: colors.textTertiary,
-                    fontSize: 12,
-                    fontWeight: AppTypography.regular,
+                  Text(
+                    '${stock.symbol} · ${stock.market}',
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                      height: 16 / 12,
+                      fontWeight: AppTypography.regular,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           ListenableBuilder(
             listenable: favorites,
             builder: (context, _) {
               final isFavorite = favorites.contains(stock.symbol);
-              return IconButton(
-                onPressed: () => favorites.toggle(stock),
-                icon: Icon(isFavorite ? Icons.star : Icons.star_border),
-                iconSize: dimens.iconMd + dimens.space2,
+              return _IconButton(
+                icon: isFavorite ? Icons.star : Icons.star_border,
                 color: isFavorite
                     ? colors.favoriteActive
                     : colors.favoriteInactive,
                 tooltip: isFavorite ? '관심 해제' : '관심 등록',
+                padding: EdgeInsets.only(
+                  left: dimens.space3,
+                  right: dimens.space4,
+                ),
+                onTap: () => favorites.toggle(stock),
               );
             },
           ),
@@ -242,7 +247,44 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// 현재가와 등락. 방향은 아이콘이 나타내므로 등락액은 절대값으로 쓴다.
+/// 헤더의 아이콘 버튼. `IconButton` 은 최소 48x48 을 차지해서 헤더가
+/// 시안보다 높아지므로, 여백을 직접 잡아 높이를 헤더에 맡긴다.
+class _IconButton extends StatelessWidget {
+  const _IconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.padding,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final EdgeInsets padding;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: padding,
+            child: Icon(icon, size: context.dimens.iconMd, color: color),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 현재가와 등락. 방향은 삼각형 기호가 나타내므로 등락액은 절대값으로 쓴다.
 class _PriceHeadline extends StatelessWidget {
   const _PriceHeadline({required this.quote});
 
@@ -253,30 +295,30 @@ class _PriceHeadline extends StatelessWidget {
     final colors = context.colors;
     final dimens = context.dimens;
 
-    final (color, icon) = switch (quote.direction) {
-      PriceDirection.up => (colors.priceUpText, Icons.arrow_drop_up),
-      PriceDirection.down => (colors.priceDownText, Icons.arrow_drop_down),
-      PriceDirection.flat => (colors.priceFlatText, null),
+    final (color, mark) = switch (quote.direction) {
+      PriceDirection.up => (colors.priceUpText, '▲ '),
+      PriceDirection.down => (colors.priceDownText, '▼ '),
+      PriceDirection.flat => (colors.priceFlatText, ''),
     };
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
           Fmt.price(quote.price),
           style: TextStyle(
             color: colors.textPrimary,
-            fontSize: 32,
+            fontSize: 29,
             fontWeight: AppTypography.bold,
           ),
         ),
         SizedBox(width: dimens.space2),
-        if (icon != null) Icon(icon, size: dimens.iconMd + 8, color: color),
         Text(
-          '${Fmt.price(quote.change.abs())} (${Fmt.rate(quote.changeRate)})',
+          '$mark${Fmt.price(quote.change.abs())} (${Fmt.rate(quote.changeRate)})',
           style: TextStyle(
             color: color,
-            fontSize: 17,
+            fontSize: 15,
             fontWeight: AppTypography.medium,
           ),
         ),
@@ -298,14 +340,15 @@ class _PeriodTabs extends StatelessWidget {
 
     return Row(
       children: [
-        for (final period in ChartPeriod.values)
+        for (final (i, period) in ChartPeriod.values.indexed) ...[
+          if (i > 0) SizedBox(width: dimens.space1),
           Expanded(
             child: GestureDetector(
               onTap: () => onChanged(period),
               behavior: HitTestBehavior.opaque,
               child: Container(
                 alignment: Alignment.center,
-                padding: EdgeInsets.symmetric(vertical: dimens.space2),
+                padding: EdgeInsets.symmetric(vertical: dimens.space1),
                 decoration: BoxDecoration(
                   color: period == current ? colors.accentBg : null,
                   borderRadius: BorderRadius.circular(dimens.radiusMd),
@@ -316,7 +359,8 @@ class _PeriodTabs extends StatelessWidget {
                     color: period == current
                         ? colors.accentDefault
                         : colors.textSecondary,
-                    fontSize: 14,
+                    fontSize: 13,
+                    height: 20 / 13,
                     fontWeight: period == current
                         ? AppTypography.medium
                         : AppTypography.regular,
@@ -325,6 +369,7 @@ class _PeriodTabs extends StatelessWidget {
               ),
             ),
           ),
+        ],
       ],
     );
   }

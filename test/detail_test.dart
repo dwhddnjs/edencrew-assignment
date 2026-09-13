@@ -63,13 +63,12 @@ void main() {
     expect(find.text('005930 · 코스피'), findsOneWidget);
   });
 
-  testWidgets('현재가와 등락을 보여준다. 등락액은 부호 없이 방향 아이콘이 붙는다', (tester) async {
+  testWidgets('현재가와 등락을 보여준다. 등락액은 부호 없이 방향 기호가 붙는다', (tester) async {
     await pumpDetail(tester);
 
     expect(find.text('259,500'), findsWidgets);
-    expect(find.text('9,500 (-3.53%)'), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+    expect(find.text('▼ 9,500 (-3.53%)'), findsOneWidget);
+    expect(find.textContaining('▲'), findsNothing);
   });
 
   testWidgets('요약 카드 5개를 축약 표기로 보여준다', (tester) async {

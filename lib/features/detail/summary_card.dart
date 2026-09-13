@@ -21,17 +21,17 @@ class SummaryCards extends StatelessWidget {
         Row(
           children: [
             _Card(label: '시가', value: Fmt.price(quote.open)),
-            SizedBox(width: dimens.space3),
+            SizedBox(width: dimens.space2),
             _Card(label: '고가', value: Fmt.price(quote.high)),
-            SizedBox(width: dimens.space3),
+            SizedBox(width: dimens.space2),
             _Card(label: '저가', value: Fmt.price(quote.low)),
           ],
         ),
-        SizedBox(height: dimens.space3),
+        SizedBox(height: dimens.space2),
         Row(
           children: [
             _Card(label: '거래량', value: Fmt.volume(quote.volume)),
-            SizedBox(width: dimens.space3),
+            SizedBox(width: dimens.space2),
             _Card(label: '시가총액', value: Fmt.marketCap(quote.marketCap)),
           ],
         ),
@@ -55,10 +55,10 @@ class _Card extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: dimens.space3,
-          vertical: dimens.space3,
+          vertical: dimens.space2,
         ),
         decoration: BoxDecoration(
-          color: colors.surfaceRaised,
+          color: colors.surfaceSunken,
           borderRadius: BorderRadius.circular(dimens.radiusMd),
         ),
         child: Column(
@@ -68,12 +68,12 @@ class _Card extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: colors.textTertiary,
-                fontSize: 12,
+                color: colors.textSecondary,
+                fontSize: 11,
+                height: 16 / 11,
                 fontWeight: AppTypography.regular,
               ),
             ),
-            SizedBox(height: dimens.space1),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -81,7 +81,8 @@ class _Card extends StatelessWidget {
                 value,
                 style: TextStyle(
                   color: colors.textPrimary,
-                  fontSize: 17,
+                  fontSize: 15,
+                  height: 24 / 15,
                   fontWeight: AppTypography.medium,
                 ),
               ),
