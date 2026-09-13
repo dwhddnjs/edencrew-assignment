@@ -7,6 +7,7 @@ import '../../core/formatters.dart';
 import '../../models/quote.dart';
 import '../../models/stock.dart';
 import '../../theme/theme.dart';
+import '../common/list_row.dart';
 
 class WatchlistTile extends StatelessWidget {
   const WatchlistTile({
@@ -31,12 +32,10 @@ class WatchlistTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: dimens.rowMinHeight),
+        // 글자 크기를 키운 기기에서는 행이 늘어나야 하므로 최소 높이로 둔다.
+        constraints: const BoxConstraints(minHeight: kListRowHeight),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: dimens.space4,
-            vertical: dimens.space3,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: dimens.space4),
           child: Row(
             children: [
               Expanded(
@@ -50,16 +49,19 @@ class WatchlistTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textPrimary,
-                        fontSize: 16,
+                        fontSize: 15,
+                        height: 20 / 15, // lh 20
+                        letterSpacing: -0.2,
                         fontWeight: AppTypography.medium,
                       ),
                     ),
-                    SizedBox(height: dimens.space1),
                     Text(
                       '${stock.symbol} · ${stock.market}',
                       style: TextStyle(
                         color: colors.textTertiary,
-                        fontSize: 12,
+                        fontSize: 11,
+                        height: 16 / 11, // lh 16
+                        letterSpacing: 0,
                         fontWeight: AppTypography.regular,
                       ),
                     ),
@@ -84,7 +86,6 @@ class _Price extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final dimens = context.dimens;
 
     final changeColor = switch (quote.direction) {
       PriceDirection.up => colors.priceUpText,
@@ -100,16 +101,19 @@ class _Price extends StatelessWidget {
           Fmt.price(quote.price),
           style: TextStyle(
             color: colors.textPrimary,
-            fontSize: 18,
-            fontWeight: AppTypography.bold,
+            fontSize: 15,
+            height: 20 / 15, // lh 20
+            letterSpacing: -0.2,
+            fontWeight: AppTypography.medium,
           ),
         ),
-        SizedBox(height: dimens.space1),
         Text(
           Fmt.change(quote.change, quote.changeRate),
           style: TextStyle(
             color: changeColor,
-            fontSize: 12,
+            fontSize: 11,
+            height: 16 / 11, // lh 16
+            letterSpacing: 0,
             fontWeight: AppTypography.medium,
           ),
         ),
@@ -118,8 +122,7 @@ class _Price extends StatelessWidget {
   }
 }
 
-/// 시세를 기다리는 동안의 자리 표시. 실제 값과 같은 높이를 차지해서
-/// 시세가 도착해도 행이 흔들리지 않는다.
+/// 시세를 기다리는 동안의 자리 표시. 시안의 두 막대 치수(64×16, 48×12)를 쓴다.
 class _PriceSkeleton extends StatelessWidget {
   const _PriceSkeleton();
 
@@ -141,9 +144,9 @@ class _PriceSkeleton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        bar(80, 18),
-        SizedBox(height: dimens.space1),
-        bar(56, 12),
+        bar(64, 16),
+        const SizedBox(height: 2), // 시안 간격. Scale 토큰에 없다.
+        bar(48, 12),
       ],
     );
   }

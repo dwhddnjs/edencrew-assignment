@@ -6,6 +6,10 @@ import '../../state/favorites.dart';
 import '../../theme/theme.dart';
 
 /// 정렬 기준을 고르는 바텀시트를 띄운다. 고르면 즉시 반영하고 닫는다.
+///
+/// 시안(`01 · 관심_sort`) 대조로 정한 값:
+/// 배경 surfaceOverlay, 위쪽 라운드 16, 좌우 여백 space6,
+/// 제목 19 bold / lh 26, 항목 행 높이 rowMinHeight(56), 항목 15 / lh 20.
 Future<void> showSortSheet(BuildContext context, Favorites favorites) {
   return showModalBottomSheet<void>(
     context: context,
@@ -26,10 +30,9 @@ class _SortSheet extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: colors.surfaceRaised,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(dimens.radiusLg),
-        ),
+        color: colors.surfaceOverlay,
+        // 시안 라운드 16. Scale 토큰에 없는 값이라 직접 쓴다.
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
         top: false,
@@ -39,16 +42,18 @@ class _SortSheet extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(
+                dimens.space6,
                 dimens.space5,
+                dimens.space6,
                 dimens.space5,
-                dimens.space5,
-                dimens.space3,
               ),
               child: Text(
                 '정렬',
                 style: TextStyle(
                   color: colors.textPrimary,
-                  fontSize: 17,
+                  fontSize: 19,
+                  height: 26 / 19, // lh 26
+                  letterSpacing: -0.2,
                   fontWeight: AppTypography.bold,
                 ),
               ),
@@ -62,7 +67,6 @@ class _SortSheet extends StatelessWidget {
                   Navigator.of(context).pop();
                 },
               ),
-            SizedBox(height: dimens.space4),
           ],
         ),
       ),
@@ -89,17 +93,19 @@ class _SortOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: SizedBox(
-        height: dimens.rowMinHeight + dimens.space2,
+        height: dimens.rowMinHeight,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: dimens.space5),
+          padding: EdgeInsets.symmetric(horizontal: dimens.space6),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: colors.textPrimary,
+                    color: selected ? colors.textPrimary : colors.textSecondary,
                     fontSize: 15,
+                    height: 20 / 15, // lh 20
+                    letterSpacing: 0,
                     fontWeight: selected
                         ? AppTypography.medium
                         : AppTypography.regular,

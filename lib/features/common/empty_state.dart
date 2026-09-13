@@ -36,25 +36,28 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: iconColor),
-            SizedBox(height: dimens.space4),
+            Icon(icon, size: 40, color: iconColor),
+            SizedBox(height: dimens.space3),
             Text(
               title,
               style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 18,
+                color: colors.textSecondary,
+                fontSize: 19,
+                height: 22 / 19, // lh 22
+                letterSpacing: -0.2,
                 fontWeight: AppTypography.bold,
               ),
             ),
-            SizedBox(height: dimens.space2),
+            SizedBox(height: dimens.space3),
             Text(
               description,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textTertiary,
-                fontSize: 13,
+                fontSize: 11,
+                height: 14 / 11, // lh 14
+                letterSpacing: 0,
                 fontWeight: AppTypography.regular,
-                height: 1.5,
               ),
             ),
             if (onRetry != null) ...[

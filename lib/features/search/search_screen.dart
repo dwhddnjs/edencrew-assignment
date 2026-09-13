@@ -9,6 +9,7 @@ import '../../models/stock.dart';
 import '../../state/favorites.dart';
 import '../../theme/theme.dart';
 import '../common/empty_state.dart';
+import '../common/list_row.dart';
 import '../detail/detail_screen.dart';
 import 'favorite_toast.dart';
 import 'search_result_tile.dart';
@@ -111,7 +112,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_query.trim().isEmpty) {
       return EmptyState(
         icon: Icons.search,
-        iconColor: context.colors.textDisabled,
+        iconColor: context.colors.textTertiary,
         title: '종목을 검색해 보세요',
         description: '종목명 또는 종목코드 6자리로\n검색하실 수 있습니다.',
       );
@@ -120,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_error) {
       return EmptyState(
         icon: Icons.cloud_off,
-        iconColor: context.colors.textDisabled,
+        iconColor: context.colors.textTertiary,
         title: '검색에 실패했습니다',
         description: '네트워크 상태를 확인한 뒤\n다시 시도해 주세요.',
         onRetry: () => _search(_controller.text),
@@ -130,7 +131,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_searched && _results.isEmpty) {
       return EmptyState(
         icon: Icons.search_off,
-        iconColor: context.colors.textDisabled,
+        iconColor: context.colors.textTertiary,
         title: '검색 결과가 없습니다',
         description: "'$_shortQuery'와\n일치하는 검색 결과를 찾지 못했습니다.",
       );
@@ -138,24 +139,22 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return ListenableBuilder(
       listenable: widget.favorites,
-      builder: (context, _) => ListView.separated(
+      builder: (context, _) => ListView.builder(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         itemCount: _results.length,
-        separatorBuilder: (context, _) => Divider(
-          height: context.dimens.borderHairline,
-          thickness: context.dimens.borderHairline,
-          color: context.colors.borderSubtle,
-        ),
-        itemBuilder: (context, i) => SearchResultTile(
-          stock: _results[i],
-          query: _query.trim(),
-          isFavorite: widget.favorites.contains(_results[i].symbol),
-          onToggleFavorite: () => _toggle(_results[i]),
-          onTap: () => openDetail(
-            context,
+        // 시안은 마지막 행 아래에도 구분선이 있다. (separated 는 사이에만 넣는다)
+        itemBuilder: (context, i) => Divided(
+          child: SearchResultTile(
             stock: _results[i],
-            repo: widget.repo,
-            favorites: widget.favorites,
+            query: _query.trim(),
+            isFavorite: widget.favorites.contains(_results[i].symbol),
+            onToggleFavorite: () => _toggle(_results[i]),
+            onTap: () => openDetail(
+              context,
+              stock: _results[i],
+              repo: widget.repo,
+              favorites: widget.favorites,
+            ),
           ),
         ),
       ),
@@ -186,55 +185,85 @@ class _SearchField extends StatelessWidget {
     final colors = context.colors;
     final dimens = context.dimens;
 
+    // 시안 본문 15 / lh 20. 힌트도 같은 치수라 색만 바꾼다.
+    const base = TextStyle(
+      fontSize: 15,
+      height: 20 / 15, // lh 20
+      letterSpacing: 0,
+      fontWeight: AppTypography.medium,
+    );
+    // 시안 검색창 높이 40. Scale 토큰에 없는 값이라 직접 쓴다.
+    const fieldHeight = 40.0;
+
     return Padding(
-      padding: EdgeInsets.all(dimens.space4),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        textInputAction: TextInputAction.search,
-        style: TextStyle(
-          color: colors.textPrimary,
-          fontSize: 15,
-          fontWeight: AppTypography.regular,
+      padding: EdgeInsets.fromLTRB(
+        dimens.space4,
+        dimens.space2,
+        dimens.space4,
+        dimens.space3,
+      ),
+      // DecoratedBox 는 테두리 자리를 따로 잡지 않는다. 시안처럼 안쪽 여백을
+      // 상자 바깥선부터 재려면 Container 가 아니라 이쪽이어야 한다.
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceSunken,
+          borderRadius: BorderRadius.circular(dimens.radiusMd),
+          border: Border.all(
+            color: colors.borderStrong,
+            width: dimens.borderHairline,
+          ),
         ),
-        cursorColor: colors.accentDefault,
-        decoration: InputDecoration(
-          isDense: true,
-          filled: true,
-          fillColor: colors.surfaceSunken,
-          hintText: '종목명 또는 종목코드',
-          hintStyle: TextStyle(
-            color: colors.textTertiary,
-            fontSize: 15,
-            fontWeight: AppTypography.regular,
+        child: SizedBox(
+          height: fieldHeight,
+          child: Row(
+            children: [
+              SizedBox(width: dimens.space2),
+              // 시안은 20 아이콘을 24 칸 가운데에 둔다.
+              SizedBox(
+                width: dimens.iconMd + dimens.space1,
+                child: Icon(
+                  Icons.search,
+                  size: dimens.iconMd,
+                  color: colors.textTertiary,
+                ),
+              ),
+              SizedBox(width: dimens.space1),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: onChanged,
+                  textInputAction: TextInputAction.search,
+                  style: base.copyWith(color: colors.textPrimary),
+                  cursorColor: colors.accentDefault,
+                  decoration: InputDecoration.collapsed(
+                    hintText: '종목명 또는 종목코드',
+                    hintStyle: base.copyWith(color: colors.textTertiary),
+                  ),
+                ),
+              ),
+              // 아이콘은 시안 자리(오른쪽 여백 8 + 24 칸의 가운데)에 두고,
+              // 누를 수 있는 상자만 40 으로 넓힌다. IconButton 은 최소 탭
+              // 크기(48)가 붙어 아이콘이 왼쪽으로 밀려서 쓰지 않는다.
+              Tooltip(
+                message: '지우기',
+                child: InkResponse(
+                  onTap: onClear,
+                  radius: dimens.space5,
+                  child: SizedBox(
+                    width: dimens.space2 * 2 + dimens.iconMd + dimens.space1,
+                    height: fieldHeight,
+                    child: Icon(
+                      Icons.close,
+                      size: dimens.iconSm,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          // 기본 prefixIcon 은 48px 상자를 차지해 아이콘과 글자가 멀어진다.
-          prefixIconConstraints: BoxConstraints(minWidth: dimens.space6 * 2),
-          prefixIcon: Icon(
-            Icons.search,
-            size: dimens.iconMd,
-            color: colors.textTertiary,
-          ),
-          suffixIcon: IconButton(
-            onPressed: onClear,
-            icon: const Icon(Icons.close),
-            iconSize: dimens.iconMd,
-            color: colors.textTertiary,
-            tooltip: '지우기',
-          ),
-          contentPadding: EdgeInsets.symmetric(vertical: dimens.space3),
-          border: _border(colors.borderSubtle, dimens),
-          enabledBorder: _border(colors.borderSubtle, dimens),
-          focusedBorder: _border(colors.borderStrong, dimens),
         ),
       ),
-    );
-  }
-
-  OutlineInputBorder _border(Color color, AppDimens dimens) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(dimens.radiusMd),
-      borderSide: BorderSide(color: color, width: dimens.borderHairline),
     );
   }
 }

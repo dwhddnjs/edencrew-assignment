@@ -4,6 +4,7 @@ import 'package:edencrew_assignment_starter/app.dart';
 import 'package:edencrew_assignment_starter/data/naver_api.dart';
 import 'package:edencrew_assignment_starter/data/stock_repository.dart';
 import 'package:edencrew_assignment_starter/models/stock.dart';
+import 'package:edencrew_assignment_starter/features/common/refresh_icon.dart';
 import 'package:edencrew_assignment_starter/state/favorites.dart';
 import 'package:edencrew_assignment_starter/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -106,7 +107,7 @@ void main() {
     final favorites = await pumpShell(tester, [samsung]);
     expect(favorites.quoteOf('005930'), isNotNull);
 
-    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.tap(find.byType(RefreshIcon));
     await tester.pumpAndSettle();
 
     expect(find.text('259,500'), findsOneWidget);

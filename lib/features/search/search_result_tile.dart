@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/stock.dart';
 import '../../theme/theme.dart';
+import '../common/list_row.dart';
 
 class SearchResultTile extends StatelessWidget {
   const SearchResultTile({
@@ -32,12 +33,13 @@ class SearchResultTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: dimens.rowMinHeight),
+        // 글자 크기를 키운 기기에서는 행이 늘어나야 하므로 최소 높이로 둔다.
+        constraints: const BoxConstraints(minHeight: kListRowHeight),
         child: Padding(
+          // 오른쪽은 별의 탭 상자가 여백까지 먹는다. (아래 주석)
           padding: EdgeInsets.only(
             left: dimens.space4,
-            top: dimens.space3,
-            bottom: dimens.space3,
+            right: dimens.space1,
           ),
           child: Row(
             children: [
@@ -47,18 +49,22 @@ class SearchResultTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _HighlightedName(name: stock.name, query: query),
-                    SizedBox(height: dimens.space1),
                     Text(
                       '${stock.symbol} · ${stock.market}',
                       style: TextStyle(
                         color: colors.textTertiary,
-                        fontSize: 12,
+                        fontSize: 11,
+                        height: 16 / 11, // lh 16
+                        letterSpacing: 0,
                         fontWeight: AppTypography.regular,
                       ),
                     ),
                   ],
                 ),
               ),
+              SizedBox(width: dimens.space3),
+              // 아이콘은 시안 자리(오른쪽 여백 16 + 24 칸의 가운데)에 두고,
+              // 누를 수 있는 상자만 48 으로 넓힌다.
               IconButton(
                 onPressed: onToggleFavorite,
                 icon: Icon(isFavorite ? Icons.star : Icons.star_border),
@@ -66,6 +72,11 @@ class SearchResultTile extends StatelessWidget {
                 color: isFavorite
                     ? colors.favoriteActive
                     : colors.favoriteInactive,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 48,
+                  height: 48,
+                ),
                 tooltip: isFavorite ? '관심 해제' : '관심 등록',
               ),
             ],
@@ -91,7 +102,9 @@ class _HighlightedName extends StatelessWidget {
 
     final base = TextStyle(
       color: colors.textPrimary,
-      fontSize: 16,
+      fontSize: 15,
+      height: 20 / 15, // lh 20
+      letterSpacing: 0,
       fontWeight: AppTypography.medium,
     );
 

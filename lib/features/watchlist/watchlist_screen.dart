@@ -7,6 +7,8 @@ import '../../data/stock_repository.dart';
 import '../../state/favorites.dart';
 import '../../theme/theme.dart';
 import '../common/empty_state.dart';
+import '../common/list_row.dart';
+import '../common/refresh_icon.dart';
 import '../detail/detail_screen.dart';
 import 'sort_sheet.dart';
 import 'watchlist_tile.dart';
@@ -69,7 +71,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         builder: (context, _) => Column(
           children: [
             _Header(favorites: widget.favorites),
-            const _Divider(),
             Expanded(child: _body(context)),
           ],
         ),
@@ -90,35 +91,23 @@ class _List extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: favorites.refresh,
-      child: ListView.separated(
+      child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (context, _) => const _Divider(),
-        itemBuilder: (context, i) => WatchlistTile(
-          stock: items[i],
-          quote: favorites.quoteOf(items[i].symbol),
-          onTap: () => openDetail(
-            context,
+        // 시안은 마지막 행 아래에도 구분선이 있다. (separated 는 사이에만 넣는다)
+        itemBuilder: (context, i) => Divided(
+          child: WatchlistTile(
             stock: items[i],
-            repo: repo,
-            favorites: favorites,
+            quote: favorites.quoteOf(items[i].symbol),
+            onTap: () => openDetail(
+              context,
+              stock: items[i],
+              repo: repo,
+              favorites: favorites,
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 헤더 아래와 행 사이에 같은 굵기의 실선을 둔다. (시안의 구분선)
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: context.dimens.borderHairline,
-      thickness: context.dimens.borderHairline,
-      color: context.colors.borderSubtle,
     );
   }
 }
@@ -133,60 +122,66 @@ class _Header extends StatelessWidget {
     final colors = context.colors;
     final dimens = context.dimens;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: dimens.space4,
-        vertical: dimens.space3,
-      ),
-      child: Row(
-        children: [
-          Text(
-            '관심',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 20,
-              fontWeight: AppTypography.bold,
+    return SizedBox(
+      // 시안 헤더 높이 52. Scale 토큰에 없는 값이라 직접 쓴다.
+      height: 52,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: dimens.space4),
+        child: Row(
+          children: [
+            Text(
+              '관심',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 19,
+                height: 22 / 19, // lh 22
+                letterSpacing: -0.2,
+                fontWeight: AppTypography.bold,
+              ),
             ),
-          ),
-          const Spacer(),
-          InkWell(
-            onTap: () => showSortSheet(context, favorites),
-            borderRadius: BorderRadius.circular(dimens.radiusSm),
-            child: Padding(
-              padding: EdgeInsets.all(dimens.space1),
+            const Spacer(),
+            InkWell(
+              onTap: () => showSortSheet(context, favorites),
+              borderRadius: BorderRadius.circular(dimens.radiusSm),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     favorites.sortBy.label,
                     style: TextStyle(
                       color: colors.textSecondary,
                       fontSize: 13,
-                      fontWeight: AppTypography.regular,
+                      height: 18 / 13, // lh 18
+                      letterSpacing: 0,
+                      fontWeight: AppTypography.bold,
                     ),
                   ),
-                  SizedBox(width: dimens.space1),
+                  // 시안 화살표는 Material 의 arrow_downward(정사각형)보다
+                  // 좁고 길다. south 가 시안과 같은 모양이다.
                   Icon(
-                    Icons.arrow_downward,
+                    Icons.south,
                     size: dimens.iconSm,
                     color: colors.textSecondary,
                   ),
                 ],
               ),
             ),
-          ),
-          SizedBox(width: dimens.space3),
-          IconButton(
-            onPressed: favorites.isLoading ? null : favorites.refresh,
-            icon: const Icon(Icons.refresh),
-            iconSize: dimens.iconMd + dimens.space1,
-            color: colors.textPrimary,
-            disabledColor: colors.textDisabled,
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            tooltip: '새로고침',
-          ),
-        ],
+            SizedBox(width: dimens.space4),
+            // IconButton 은 M3 기본 minimumSize 40x40 을 갖고 있어서
+            // padding·constraints 를 0 으로 줘도 상자가 20 보다 커진다.
+            // 오른쪽 여백과 아이콘 간격이 16 을 넘어 보이던 원인.
+            InkWell(
+              onTap: favorites.isLoading ? null : favorites.refresh,
+              borderRadius: BorderRadius.circular(dimens.radiusSm),
+              child: RefreshIcon(
+                size: dimens.iconMd,
+                color: favorites.isLoading
+                    ? colors.textDisabled
+                    : colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

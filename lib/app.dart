@@ -1,5 +1,7 @@
 // MaterialApp + AppTheme 적용, 하단 탭 바(관심/검색) 셸.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'data/stock_repository.dart';
@@ -34,6 +36,15 @@ class _EdencrewAppState extends State<EdencrewApp> {
       title: '이든크루 평가 과제',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
+      // 시안(Figma)은 줄 높이의 남는 여백을 위아래로 똑같이 나눈다.
+      // Flutter 기본값(proportional)은 위쪽에 더 주기 때문에 글자가
+      // 시안보다 0.5 ~ 1.5 올라간다.
+      builder: (context, child) => DefaultTextHeightBehavior(
+        textHeightBehavior: const TextHeightBehavior(
+          leadingDistribution: TextLeadingDistribution.even,
+        ),
+        child: child!,
+      ),
       home: HomeShell(favorites: _favorites, repo: _repo),
     );
   }
@@ -91,6 +102,7 @@ class _TabBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: colors.surfaceRaised,
         border: Border(
           top: BorderSide(
             color: colors.borderSubtle,
@@ -98,8 +110,12 @@ class _TabBar extends StatelessWidget {
           ),
         ),
       ),
-      child: SafeArea(
-        top: false,
+      child: Padding(
+        // 시안은 탭 바(56) 아래를 40.5 비워 둔다. 기기 안전영역(아이폰 34)이
+        // 그보다 작으면 시안만큼 띄운다. Scale 토큰에 없는 값이라 직접 쓴다.
+        padding: EdgeInsets.only(
+          bottom: math.max(MediaQuery.paddingOf(context).bottom, 40.5),
+        ),
         child: SizedBox(
           height: dimens.tabBarHeight,
           child: Row(
@@ -161,12 +177,14 @@ class _TabItem extends StatelessWidget {
               size: dimens.iconMd + dimens.space1,
               color: color,
             ),
-            SizedBox(height: dimens.space1),
+            // 시안은 아이콘 상자와 라벨 행간이 맞붙어 있다. 사이 간격 없음.
             Text(
               label,
               style: TextStyle(
                 color: color,
                 fontSize: 11,
+                height: 14 / 11, // lh 14
+                letterSpacing: 0,
                 fontWeight: selected
                     ? AppTypography.medium
                     : AppTypography.regular,
