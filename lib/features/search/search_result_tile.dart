@@ -1,5 +1,7 @@
 // 검색 결과 한 행. 검색어 일치 부분 하이라이트 + 관심 등록 별.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../models/stock.dart';
@@ -108,9 +110,12 @@ class _HighlightedName extends StatelessWidget {
       fontWeight: AppTypography.medium,
     );
 
+    // 소문자로 바꾼 문자열에서 찾은 위치라, 길이가 달라지는 문자가 섞이면
+    // 원본에서 끝 위치가 넘칠 수 있다. (예: 'İ' 는 소문자로 두 글자)
     final at = query.isEmpty
         ? -1
         : name.toLowerCase().indexOf(query.toLowerCase());
+    final end = math.min(at + query.length, name.length);
 
     return Text.rich(
       maxLines: 1,
@@ -122,10 +127,10 @@ class _HighlightedName extends StatelessWidget {
             : [
                 TextSpan(text: name.substring(0, at)),
                 TextSpan(
-                  text: name.substring(at, at + query.length),
+                  text: name.substring(at, end),
                   style: TextStyle(color: colors.searchHighlight),
                 ),
-                TextSpan(text: name.substring(at + query.length)),
+                TextSpan(text: name.substring(end)),
               ],
       ),
     );

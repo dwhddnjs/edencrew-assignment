@@ -107,16 +107,28 @@ void main() {
     expect(stocks.map((s) => s.symbol), ['005930']);
   });
 
-  test('실시간 시세: 숫자 필드가 비어도 그 종목만 0 이 되고 나머지는 살아남는다', () {
+  test('실시간 시세: 종목코드나 현재가가 빠진 항목은 건너뛰고 나머지는 살아남는다', () {
     final json = {
       'result': {
         'areas': [
           {
             'datas': [
+              // 현재가가 없다. 0 으로 채우면 0 원 / -100% 가 그려진다.
               {
                 'cd': '005930',
                 'nv': null,
                 'pcv': 10,
+                'ov': 1,
+                'hv': 1,
+                'lv': 1,
+                'aq': 1,
+                'countOfListedStock': 1,
+              },
+              // 종목코드가 없다. 예전에는 여기서 목록 전체가 실패했다.
+              {
+                'cd': null,
+                'nv': 100,
+                'pcv': 100,
                 'ov': 1,
                 'hv': 1,
                 'lv': 1,
@@ -143,7 +155,8 @@ void main() {
       for (final d in RealtimeItemDto.listFromJson(json)) d.cd: d.toModel(),
     };
 
-    expect(quotes['005930']!.price, 0);
+    // 쓸 수 없는 두 항목은 아예 빠진다. 화면에서는 스켈레톤으로 남는다.
+    expect(quotes.keys, ['000660']);
     expect(quotes['000660']!.price, 200);
   });
 }

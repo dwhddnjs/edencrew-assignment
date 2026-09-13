@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-/// realtime.json 은 005930 / 000660 / 035420 세 종목을 담고 있다.
+/// realtime.json 은 005930 / 000660 두 종목을 담고 있다.
 Favorites build({List<Uri>? calls}) {
   final bytes = File('assets/mock/realtime.json').readAsBytesSync();
   final client = MockClient((req) async {

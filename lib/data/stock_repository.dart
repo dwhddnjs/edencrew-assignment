@@ -78,12 +78,15 @@ class StockRepository {
       final page = DailyPricePageDto.fromHtml(
         await _api.dailyPrice(symbol, next),
       );
+
+      // 상장 폐지 등으로 빈 페이지가 오면 더 받아도 소용없다.
+      // 이때 `lastPage` 는 믿지 않는다. 응답이 잠깐 이상해서 비어 온 경우까지
+      // 캐시에 반영하면, 다음 요청부터 그 페이지에서 영구히 막힌다.
+      if (page.prices.isEmpty) break;
+
       cache.prices.addAll(page.prices);
       cache.fetchedPages = next;
       cache.lastPage = page.lastPage;
-
-      // 상장 폐지 등으로 빈 페이지가 오면 더 받아도 소용없다.
-      if (page.prices.isEmpty) break;
     }
 
     return cache.prices.take(period.days).toList();

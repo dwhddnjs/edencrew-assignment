@@ -35,7 +35,6 @@ class NaverApi {
     );
   }
 
-  /// 종목 메타데이터 (이름, 거래소명).
   /// 일별 시세. JSON 이 아니라 HTML 을 돌려준다.
   Future<String> dailyPrice(String symbol, int page) {
     return _getHtml(
@@ -46,6 +45,7 @@ class NaverApi {
     );
   }
 
+  /// 종목 메타데이터 (이름, 거래소명).
   Future<Map<String, dynamic>> stockMeta(String symbol) {
     return _getJson(
       Uri.https(

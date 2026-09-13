@@ -1,5 +1,6 @@
 // 캔들 차트. 패키지 없이 CustomPainter 로 그린다.
-// 상승 몸통 chartLineUp, 하락 몸통 chartLineDown, 심지와 보합 몸통 chartBaseline.
+// 상승 몸통 chartLineUp, 하락 몸통 chartLineDown, 보합 몸통 chartLineFlat,
+// 심지 chartBaseline.
 
 import 'package:flutter/material.dart';
 
@@ -31,7 +32,8 @@ class CandleChart extends StatelessWidget {
             prices: prices.reversed.toList(),
             up: colors.chartLineUp,
             down: colors.chartLineDown,
-            flat: colors.chartBaseline,
+            flat: colors.chartLineFlat,
+            wick: colors.chartBaseline,
           ),
         ),
       ),
@@ -45,6 +47,7 @@ class _CandlePainter extends CustomPainter {
     required this.up,
     required this.down,
     required this.flat,
+    required this.wick,
   });
 
   /// 오래된 날짜가 앞.
@@ -54,6 +57,9 @@ class _CandlePainter extends CustomPainter {
 
   /// 심지와 보합 몸통에 함께 쓴다.
   final Color flat;
+
+  /// 고가 ~ 저가 선. 몸통보다 흐리다.
+  final Color wick;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -74,7 +80,7 @@ class _CandlePainter extends CustomPainter {
     final slot = size.width / prices.length;
     // 캔들 사이가 붙어 보이지 않도록 슬롯의 60%만 몸통으로 쓴다.
     final bodyWidth = (slot * 0.6).clamp(1.0, 12.0);
-    final wick = Paint()..color = flat;
+    final wickPaint = Paint()..color = wick;
 
     for (var i = 0; i < prices.length; i++) {
       final p = prices[i];
@@ -83,7 +89,7 @@ class _CandlePainter extends CustomPainter {
       // 심지: 고가 ~ 저가.
       canvas.drawRect(
         Rect.fromLTRB(center - 0.5, y(p.high), center + 0.5, y(p.low)),
-        wick,
+        wickPaint,
       );
 
       // 몸통: 시가 ~ 종가. 보합이면 선으로만 남아 사라지므로 최소 높이를 준다.
@@ -111,5 +117,6 @@ class _CandlePainter extends CustomPainter {
       old.prices != prices ||
       old.up != up ||
       old.down != down ||
-      old.flat != flat;
+      old.flat != flat ||
+      old.wick != wick;
 }

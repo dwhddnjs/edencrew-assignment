@@ -15,13 +15,16 @@ import 'daily_price_table.dart';
 import 'summary_card.dart';
 
 /// 검색 / 관심 목록에서 상세로 들어가는 통로.
-void openDetail(
+///
+/// 돌아올 때까지 기다릴 수 있도록 `Future` 를 그대로 돌려준다.
+/// (관심 화면은 이 화면에서 바뀐 관심 상태를 받아 시세를 다시 받는다)
+Future<void> openDetail(
   BuildContext context, {
   required Stock stock,
   required StockRepository repo,
   required Favorites favorites,
 }) {
-  Navigator.of(context).push(
+  return Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) =>
           DetailScreen(stock: stock, repo: repo, favorites: favorites),
@@ -96,14 +99,50 @@ class _DetailScreenState extends State<DetailScreen> {
     if (mounted && period == _period) setState(() => _prices = prices);
   }
 
+  /// 실패하면 탭을 되돌린다. 새 탭이 켜진 채 이전 기간의 차트가 남아 있으면
+  /// 화면이 거짓말을 하는 셈이라, 보여주는 데이터와 탭을 항상 붙여 둔다.
   Future<void> _changePeriod(ChartPeriod period) async {
     if (period == _period) return;
+    final previous = _period;
     setState(() => _period = period);
     try {
       await _loadPrices(period);
     } catch (_) {
-      if (mounted) setState(() => _error = true);
+      if (!mounted) return;
+      setState(() {
+        _period = previous;
+        _error = true;
+      });
+      _showLoadFailed();
     }
+  }
+
+  void _showLoadFailed() {
+    final colors = context.colors;
+    final dimens = context.dimens;
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: colors.surfaceOverlay,
+          elevation: 0,
+          margin: EdgeInsets.all(dimens.space4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(dimens.radiusLg),
+          ),
+          content: Text(
+            '시세를 불러오지 못했습니다',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 13,
+              height: 18 / 13,
+              fontWeight: AppTypography.bold,
+            ),
+          ),
+        ),
+      );
   }
 
   @override
@@ -131,9 +170,10 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget _body(BuildContext context, Quote? quote) {
     final dimens = context.dimens;
 
-    // 받아 둔 게 하나도 없을 때만 화면을 통째로 덮는다. 기간을 바꾸다 실패한
-    // 경우라면 이미 그려진 차트와 표를 지울 이유가 없다.
-    if (_error && quote == null && _prices.isEmpty) {
+    // 시세를 못 받았으면 화면을 통째로 덮는다. 현재가와 요약 카드가 이 화면의
+    // 본문이라, 그것만 빠진 채 차트만 남으면 왜 비었는지 알 수 없다.
+    // 기간을 바꾸다 실패한 경우는 탭을 되돌리므로 여기까지 오지 않는다.
+    if (_error && quote == null) {
       return EmptyState(
         icon: Icons.cloud_off,
         iconColor: context.colors.textDisabled,

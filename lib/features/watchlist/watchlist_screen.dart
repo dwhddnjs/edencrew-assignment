@@ -99,12 +99,17 @@ class _List extends StatelessWidget {
           child: WatchlistTile(
             stock: items[i],
             quote: favorites.quoteOf(items[i].symbol),
-            onTap: () => openDetail(
-              context,
-              stock: items[i],
-              repo: repo,
-              favorites: favorites,
-            ),
+            // 상세에서 관심을 껐다 켜면 그 종목의 시세가 비어 돌아온다.
+            // 탭 전환이 없으니 여기서 받아야 스켈레톤이 남지 않는다.
+            onTap: () async {
+              await openDetail(
+                context,
+                stock: items[i],
+                repo: repo,
+                favorites: favorites,
+              );
+              await favorites.refresh();
+            },
           ),
         ),
       ),
@@ -170,14 +175,17 @@ class _Header extends StatelessWidget {
             // IconButton 은 M3 기본 minimumSize 40x40 을 갖고 있어서
             // padding·constraints 를 0 으로 줘도 상자가 20 보다 커진다.
             // 오른쪽 여백과 아이콘 간격이 16 을 넘어 보이던 원인.
-            InkWell(
-              onTap: favorites.isLoading ? null : favorites.refresh,
-              borderRadius: BorderRadius.circular(dimens.radiusSm),
-              child: RefreshIcon(
-                size: dimens.iconMd,
-                color: favorites.isLoading
-                    ? colors.textDisabled
-                    : colors.textSecondary,
+            Tooltip(
+              message: '새로고침',
+              child: InkWell(
+                onTap: favorites.isLoading ? null : favorites.refresh,
+                borderRadius: BorderRadius.circular(dimens.radiusSm),
+                child: RefreshIcon(
+                  size: dimens.iconMd,
+                  color: favorites.isLoading
+                      ? colors.textDisabled
+                      : colors.textSecondary,
+                ),
               ),
             ),
           ],

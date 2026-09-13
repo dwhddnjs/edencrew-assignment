@@ -25,8 +25,9 @@ class RealtimeItemDto {
     required this.countOfListedStock,
   });
 
+  /// 종목코드와 현재가가 있는 항목만 넘어온다. ([hasCore])
   factory RealtimeItemDto.fromJson(Map<String, dynamic> json) {
-    // 한 종목이라도 필드가 비면 관심 목록 전체 갱신이 실패한다.
+    // 보조 필드가 비어도 파싱은 계속한다.
     // 부분 실패를 전체 실패로 키우지 않는다.
     int n(String key) => (json[key] as num?)?.toInt() ?? 0;
     return RealtimeItemDto(
@@ -41,13 +42,25 @@ class RealtimeItemDto {
     );
   }
 
+  /// 종목코드와 현재가가 둘 다 있는 항목인지.
+  ///
+  /// 둘 중 하나라도 없으면 시세로 쓸 수 없다. 거래정지 종목처럼 `nv` 가
+  /// 빠진 항목을 0 으로 채우면 `0 원 / -100%` 가 진짜 시세처럼 그려진다.
+  static bool hasCore(Map<String, dynamic> json) =>
+      json['cd'] is String && json['nv'] is num;
+
   /// result.areas[*].datas[*] 를 전부 펼쳐서 파싱.
+  ///
+  /// 쓸 수 없는 항목은 건너뛴다. 한 종목 때문에 목록 전체 갱신이 실패하면
+  /// 멀쩡한 나머지 종목까지 에러 화면으로 덮인다.
   static List<RealtimeItemDto> listFromJson(Map<String, dynamic> json) {
     final areas =
         (json['result'] as Map<String, dynamic>)['areas'] as List<dynamic>;
     return areas
         .expand((a) => (a as Map<String, dynamic>)['datas'] as List<dynamic>)
-        .map((e) => RealtimeItemDto.fromJson(e as Map<String, dynamic>))
+        .cast<Map<String, dynamic>>()
+        .where(hasCore)
+        .map(RealtimeItemDto.fromJson)
         .toList();
   }
 
